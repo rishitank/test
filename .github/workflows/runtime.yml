@@ -26,7 +26,7 @@ permissions:
 jobs:
   runtime:
     name: runtime
-    uses: rishitank/.github/.github/workflows/runtime-gate.yml@8e8a1977309ac958bafd85825c7cd800be8c8ac8
+    uses: rishitank/.github/.github/workflows/runtime-gate.yml@f1ad74760767f0f1c488d526fb28d0617917a626
     permissions:
       contents: read
       actions: read
@@ -41,5 +41,23 @@ jobs:
       # index.html, so serve unknown paths the same way.
       spa: true
       port: 3000
+      # No sign-in: the app is the static CRA starter page with no accounts or
+      # login page, so login-path stays unset and there is one crawl.
     secrets:
       gemini-api-key: ${{ secrets.GEMINI_API_KEY }}
+
+  # Weekly/manual runs only: saves the paths the explorer completed to
+  # .github/runtime-gate-flows.json through a reviewed PR; the runtime job then
+  # replays them on every PR.
+  flows:
+    needs: runtime
+    if: ${{ !cancelled() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') }}
+    uses: rishitank/.github/.github/workflows/runtime-gate-flows.yml@f1ad74760767f0f1c488d526fb28d0617917a626
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: write
+    with:
+      ci-workflows: |
+        runtime.yml
+        ci.yml
