@@ -22,13 +22,5 @@ jobs:
     uses: rishitank/.github/.github/workflows/security.yml@v1
     with:
       ecosystem: node
-      # No .nvmrc in this repo: the audit's setup-node reads package.json
-      # instead (no engines field there, so it uses the runner's Node).
-      node-version-file: package.json
-      # The repo has no lockfile, so osv-scanner finds no package sources and
-      # would exit 128. Allow that rather than fail on a missing input;
-      # gitleaks still scans the full history.
-      osv-scan-args: |
-        --allow-no-lockfiles
-        --recursive
-        ./
+      # osv-scanner scans package-lock.json; the audit's setup-node reads
+      # .nvmrc (`node`, the latest Current release), the shared default.

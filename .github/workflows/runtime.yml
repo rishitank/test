@@ -32,17 +32,13 @@ jobs:
       actions: read
       pull-requests: write
     with:
-      # Legacy app (ejected Create React App 2: webpack 4, Babel 6/7, Jest 23,
-      # node-sass 4), revived in its own toolchain. There is no lockfile, so
-      # `npm install` resolves today's newest in-range versions (expect
-      # drift); node-sass then resolves to 4.14.x, which supports Node <= 14.
+      # Vite build on the latest Current Node (.nvmrc is `node`), installed
+      # with `npm ci` from package-lock.json.
       mode: static
-      build-image: node:14-bullseye
-      # The gate exports CI=true, which this CRA build script turns into
-      # "treat warnings as errors". That is a lint policy, not a runtime
-      # check, so it is switched off for the build only.
-      build: CI=false npm run build
-      static-dir: build
+      build: npm run build
+      static-dir: dist
+      # The generated service worker answers every navigation with
+      # index.html, so serve unknown paths the same way.
       spa: true
       port: 3000
     secrets:

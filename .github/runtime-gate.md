@@ -1,9 +1,10 @@
 # test: notes for the runtime explorer
 
-**What it is.** An ejected Create React App 2 starter kept for reproducing
-bugs. It renders a single page: a header with the spinning React logo and
-"Welcome to React", and a line of intro text. Bootstrap 3 (Sass) and jQuery
-are bundled, and a service worker is registered in production builds.
+**What it is.** A Create React App 2 starter kept for reproducing bugs, now
+built with Vite. It renders a single page: a header with the spinning React
+logo and "Welcome to React", and a line of intro text. Bootstrap 3 (Sass),
+Font Awesome 4 and jQuery are bundled, and a service worker is registered
+in production builds.
 
 **Flows worth trying.**
 1. Load `/` and check that the header, logo and intro text render.

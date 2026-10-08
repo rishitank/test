@@ -1,8 +1,5 @@
-$icon-font-path: "~bootstrap-sass/assets/fonts/bootstrap/";
-$fa-font-path: "~font-awesome/fonts";
-
-@import "~font-awesome/scss/font-awesome";
-@import "~bootstrap-sass/assets/stylesheets/bootstrap";
+@use "~font-awesome/scss/font-awesome" with ($fa-font-path: "~font-awesome/fonts");
+@use "~bootstrap-sass/assets/stylesheets/bootstrap" with ($icon-font-path: "~bootstrap-sass/assets/fonts/bootstrap/");
 
 body {
   margin: 0;

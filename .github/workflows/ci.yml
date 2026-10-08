@@ -1,9 +1,7 @@
-# The repo's own Jest suite, run in the toolchain the app was written for.
-# Ejected Create React App 2 (Jest 23, Babel 6/7, node-sass 4) does not
-# install or run on current Node, so install and test run inside node:14.
-# There is no lockfile: `npm install` resolves today's newest in-range
-# versions, so expect drift. The production build and the browser checks are
-# in runtime.yml.
+# The repo's own test suite (Vitest + Testing Library), on the latest Current
+# Node from .nvmrc, via the shared node-ci workflow. There is no lint or
+# typecheck script, and the production build and the browser checks are in
+# runtime.yml, so only `npm test` runs here.
 name: ci
 
 on:
@@ -21,23 +19,9 @@ permissions:
 
 jobs:
   test:
-    name: test (node:14)
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    env:
-      IMAGE: node:14-bullseye
-    steps:
-      - uses: actions/checkout@v7.0.1
-        with:
-          persist-credentials: false
-
-      - name: Install
-        run: |
-          docker run --rm -v "${GITHUB_WORKSPACE}:/w" -w /w -u "$(id -u):$(id -g)" \
-            -e HOME=/tmp -e CI=true "${IMAGE}" npm install
-
-      # scripts/test.js only leaves watch mode when CI is set.
-      - name: Test
-        run: |
-          docker run --rm -v "${GITHUB_WORKSPACE}:/w" -w /w -u "$(id -u):$(id -g)" \
-            -e HOME=/tmp -e CI=true "${IMAGE}" npm test
+    uses: rishitank/.github/.github/workflows/node-ci.yml@v1
+    with:
+      lint: ""
+      typecheck: ""
+      test: npm test
+      build: ""
