@@ -11,7 +11,7 @@ const eslintFormatter = require('react-dev-utils/eslintFormatter');
 const ModuleScopePlugin = require('react-dev-utils/ModuleScopePlugin');
 const paths = require('./paths');
 const getClientEnvironment = require('./env');
-const ExtractTextPlugin = require('extract-text-webpack-plugin');
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
 // Webpack uses `publicPath` to determine where the app is being served from.
 // It requires a trailing slash, or the file assets will get an incorrect path.
@@ -39,11 +39,9 @@ if (env.stringified['process.env'].NODE_ENV !== '"production"') {
 // Note: defined here because it will be used more than once.
 const cssFilename = 'static/css/[name].[contenthash:8].css';
 
-// ExtractTextPlugin expects the build output to be flat.
-// (See https://github.com/webpack-contrib/extract-text-webpack-plugin/issues/27)
-// However, our output is structured with css, js and media folders.
-// To have this structure working with relative paths, we have to use custom options.
-const extractTextPluginOptions = shouldUseRelativeAssetPaths
+// Our output is structured with css, js and media folders. With relative asset
+// paths, url()s inside the extracted CSS have to climb back out of static/css.
+const miniCssExtractLoaderOptions = shouldUseRelativeAssetPaths
     ? // Making sure that the publicPath goes back to to build folder.
     { publicPath: Array(cssFilename.split('/').length).join('../') }
     : {};
@@ -160,64 +158,55 @@ module.exports = {
                     // The notation here is somewhat confusing.
                     // "postcss" loader applies autoprefixer to our CSS.
                     // "css" loader resolves paths in CSS and adds assets as dependencies.
-                    // "style" loader normally turns CSS into JS modules injecting <style>,
-                    // but unlike in development configuration, we do something different.
-                    // `ExtractTextPlugin` first applies the "postcss" and "css" loaders
-                    // (second argument), then grabs the result CSS and puts it into a
-                    // separate file in our build process. This way we actually ship
-                    // a single CSS file in production instead of JS code injecting <style>
-                    // tags. If you use code splitting, however, any async bundles will still
-                    // use the "style" loader inside the async code so CSS from them won't be
-                    // in the main CSS file.
+                    // In production, `MiniCssExtractPlugin.loader` takes the place of the
+                    // "style" loader: it pulls the CSS that the "sass", "postcss" and "css"
+                    // loaders produce into separate .css files, so we ship stylesheets
+                    // instead of JS code injecting <style> tags. Async chunks get their
+                    // own CSS files.
                     {
                         test: isStyles,
-                        loader: ExtractTextPlugin.extract(
-                            Object.assign(
-                                {
-                                    fallback: require.resolve('style-loader'),
-                                    use: [
-                                        {
-                                            loader: require.resolve('css-loader'),
-                                            options: {
-                                                importLoaders: 1,
-                                                minimize: true,
-                                                sourceMap: shouldUseSourceMap,
-                                                modules: true,
-                                                localIdentName: '[local]'
-                                            },
-                                        },
-                                        {
-                                            loader: require.resolve('postcss-loader'),
-                                            options: {
-                                                // Necessary for external CSS imports to work
-                                                // https://github.com/facebookincubator/create-react-app/issues/2677
-                                                ident: 'postcss',
-                                                plugins: () => [
-                                                    require('postcss-flexbugs-fixes'),
-                                                    autoprefixer({
-                                                        browsers: [
-                                                            '>1%',
-                                                            'last 4 versions',
-                                                            'Firefox ESR',
-                                                            'not ie < 9', // React doesn't support IE8 anyway
-                                                        ],
-                                                        flexbox: 'no-2009',
-                                                    }),
-                                                ],
-                                            },
-                                        },
-                                        {
-                                            loader: require.resolve('sass-loader'),
-                                            options: {
-                                                sourceMap: shouldUseSourceMap
-                                            }
-                                        }
+                        use: [
+                            {
+                                loader: MiniCssExtractPlugin.loader,
+                                options: miniCssExtractLoaderOptions,
+                            },
+                            {
+                                loader: require.resolve('css-loader'),
+                                options: {
+                                    importLoaders: 1,
+                                    sourceMap: shouldUseSourceMap,
+                                    modules: true,
+                                    localIdentName: '[local]'
+                                },
+                            },
+                            {
+                                loader: require.resolve('postcss-loader'),
+                                options: {
+                                    // Necessary for external CSS imports to work
+                                    // https://github.com/facebookincubator/create-react-app/issues/2677
+                                    ident: 'postcss',
+                                    plugins: () => [
+                                        require('postcss-flexbugs-fixes'),
+                                        autoprefixer({
+                                            browsers: [
+                                                '>1%',
+                                                'last 4 versions',
+                                                'Firefox ESR',
+                                                'not ie < 9', // React doesn't support IE8 anyway
+                                            ],
+                                            flexbox: 'no-2009',
+                                        }),
                                     ],
                                 },
-                                extractTextPluginOptions
-                            )
-                        ),
-                        // Note: this won't work without `new ExtractTextPlugin()` in `plugins`.
+                            },
+                            {
+                                loader: require.resolve('sass-loader'),
+                                options: {
+                                    sourceMap: shouldUseSourceMap
+                                }
+                            }
+                        ],
+                        // Note: this won't work without `new MiniCssExtractPlugin()` in `plugins`.
                     },
                     {
                         test: /\.(woff2?|eot|ttf|otf|svg)(\?.*)?$/,
@@ -280,9 +269,10 @@ module.exports = {
         // It is absolutely essential that NODE_ENV was set to production here.
         // Otherwise React will be compiled in the very slow development mode.
         new webpack.DefinePlugin(env.stringified),
-        // Note: this won't work without ExtractTextPlugin.extract(..) in `loaders`.
-        new ExtractTextPlugin({
+        // Note: this won't work without MiniCssExtractPlugin.loader in `loaders`.
+        new MiniCssExtractPlugin({
             filename: cssFilename,
+            chunkFilename: 'static/css/[name].[contenthash:8].chunk.css',
         }),
         // Generate a manifest file which contains a mapping of all asset filenames
         // to their corresponding output file so that tools can pick it up without
