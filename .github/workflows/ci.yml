@@ -1,0 +1,27 @@
+# The repo's own test suite (Vitest + Testing Library), on the latest Current
+# Node from .nvmrc, via the shared node-ci workflow. There is no lint or
+# typecheck script, and the production build and the browser checks are in
+# runtime.yml, so only `npm test` runs here.
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    uses: rishitank/.github/.github/workflows/node-ci.yml@v1
+    with:
+      lint: ""
+      typecheck: ""
+      test: npm test
+      build: ""

@@ -1,0 +1,63 @@
+# Runtime gate: boots the app and uses it in a real browser before a change
+# (a Renovate update included) can merge. Fails on runtime errors: uncaught
+# exceptions, console errors, React hydration errors, failed same-origin
+# requests, 4xx/5xx, blank pages, crash screens. Advisory on top: screenshot
+# diff against the last master run, and an AI explorer (Gemini free
+# tier, GEMINI_API_KEY secret) that uses the app like a person for major or
+# framework updates, the `ai-explore` label, the weekly schedule and manual
+# runs. See docs/runtime-gate.md in rishitank/.github.
+name: runtime
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+  schedule:
+    - cron: "43 5 * * 4"
+  workflow_dispatch:
+
+concurrency:
+  group: runtime-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  runtime:
+    name: runtime
+    uses: rishitank/.github/.github/workflows/runtime-gate.yml@f5b19aff6eac60563a34e7a2ddc057e75766235c
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: write
+    with:
+      # Vite build on the latest Current Node (.nvmrc is `node`), installed
+      # with `npm ci` from package-lock.json.
+      mode: static
+      build: npm run build
+      static-dir: dist
+      # The generated service worker answers every navigation with
+      # index.html, so serve unknown paths the same way.
+      spa: true
+      port: 3000
+      # No sign-in: the app is the static CRA starter page with no accounts or
+      # login page, so login-path stays unset and there is one crawl.
+    secrets:
+      gemini-api-key: ${{ secrets.GEMINI_API_KEY }}
+
+  # Weekly/manual runs only: saves the paths the explorer completed to
+  # .github/runtime-gate-flows.json through a reviewed PR; the runtime job then
+  # replays them on every PR.
+  flows:
+    needs: runtime
+    if: ${{ !cancelled() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') }}
+    uses: rishitank/.github/.github/workflows/runtime-gate-flows.yml@f5b19aff6eac60563a34e7a2ddc057e75766235c
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: write
+    with:
+      ci-workflows: |
+        runtime.yml
+        ci.yml
