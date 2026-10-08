@@ -1,0 +1,49 @@
+# Runtime gate: boots the app and uses it in a real browser before a change
+# (a Renovate update included) can merge. Fails on runtime errors: uncaught
+# exceptions, console errors, React hydration errors, failed same-origin
+# requests, 4xx/5xx, blank pages, crash screens. Advisory on top: screenshot
+# diff against the last master run, and an AI explorer (Gemini free
+# tier, GEMINI_API_KEY secret) that uses the app like a person for major or
+# framework updates, the `ai-explore` label, the weekly schedule and manual
+# runs. See docs/runtime-gate.md in rishitank/.github.
+name: runtime
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+  schedule:
+    - cron: "43 5 * * 4"
+  workflow_dispatch:
+
+concurrency:
+  group: runtime-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  runtime:
+    name: runtime
+    uses: rishitank/.github/.github/workflows/runtime-gate.yml@7793cd7224a45518e7f4aabe58c6dcb52640bdb9
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: write
+    with:
+      # Legacy app (ejected Create React App 2: webpack 4, Babel 6/7, Jest 23,
+      # node-sass 4), revived in its own toolchain. There is no lockfile, so
+      # `npm install` resolves today's newest in-range versions (expect
+      # drift); node-sass then resolves to 4.14.x, which supports Node <= 14.
+      mode: static
+      build-image: node:14-bullseye
+      # The gate exports CI=true, which this CRA build script turns into
+      # "treat warnings as errors". That is a lint policy, not a runtime
+      # check, so it is switched off for the build only.
+      build: CI=false npm run build
+      static-dir: build
+      spa: true
+      port: 3000
+    secrets:
+      gemini-api-key: ${{ secrets.GEMINI_API_KEY }}
