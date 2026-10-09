@@ -19,7 +19,7 @@ permissions:
 
 jobs:
   test:
-    uses: rishitank/.github/.github/workflows/node-ci.yml@v1
+    uses: rishitank/.github/.github/workflows/node-ci.yml@5c644123ed93759cf78aa32d9d119150910e113e # v1
     with:
       lint: ""
       typecheck: ""
